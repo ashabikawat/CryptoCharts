@@ -16,7 +16,6 @@ import {
 import { chartDays } from "../api/data";
 import SelectButton from "./SelectButton";
 
-// Register necessary components for Chart.js
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -42,6 +41,7 @@ const CoinInfo = ({ coin }) => {
 
   useEffect(() => {
     fetchHistoricData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency, days]);
 
   const theme = useTheme();

@@ -22,6 +22,7 @@ const CoinPage = () => {
 
   useEffect(() => {
     fetchCoins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!coin) return <LinearProgress style={{ backgroundColor: "#66fcf1" }} />;

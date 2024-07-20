@@ -15,7 +15,7 @@ import useCryptoContext from "../contexts/CryptoContext";
 const Header = () => {
   const navigate = useNavigate();
 
-  const { currency, setCurrency, symbol } = useCryptoContext();
+  const { currency, setCurrency } = useCryptoContext();
 
   const darkTheme = createTheme({
     palette: {

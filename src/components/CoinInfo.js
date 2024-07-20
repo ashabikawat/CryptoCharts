@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import useCryptoContext from "../contexts/CryptoContext";
 import { HistoricalChart } from "../api/api";
-import { Box, CircularProgress, duration, useTheme } from "@mui/material";
+import { Box, CircularProgress, useTheme } from "@mui/material";
 import { Line } from "react-chartjs-2";
 import {
   Chart,

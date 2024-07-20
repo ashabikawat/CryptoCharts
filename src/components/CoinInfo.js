@@ -26,6 +26,27 @@ Chart.register(
   Legend
 );
 
+// Retry function
+const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return await response.json();
+      } else if (response.status === 429) {
+        // Too Many Requests - Retry after delay
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+    } catch (error) {
+      if (i === retries - 1) {
+        throw error;
+      }
+    }
+  }
+};
+
 const CoinInfo = ({ coin }) => {
   const [historicData, setHistoricData] = useState();
   const [days, setDays] = useState(1);
@@ -33,10 +54,14 @@ const CoinInfo = ({ coin }) => {
   const { currency } = useCryptoContext();
 
   const fetchHistoricData = async () => {
-    const response = await fetch(HistoricalChart(coin.id, days, currency));
-    const data = await response.json();
-
-    setHistoricData(data.prices);
+    try {
+      const data = await fetchWithRetry(
+        HistoricalChart(coin.id, days, currency)
+      );
+      setHistoricData(data.prices);
+    } catch (error) {
+      console.error("Failed to fetch historic data:", error);
+    }
   };
 
   useEffect(() => {

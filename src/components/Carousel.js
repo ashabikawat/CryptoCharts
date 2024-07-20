@@ -1,29 +1,17 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
-import useCryptoContext from "../contexts/CryptoContext";
-import { TrendingCoins } from "../api/api";
-import AliceCarousel from "react-alice-carousel";
+import React from "react";
 import { Link } from "react-router-dom";
+import AliceCarousel from "react-alice-carousel";
+import { useTrendingContext } from "../contexts/TrendingContext";
+import useCryptoContext from "../contexts/CryptoContext";
 
 export function numberWithCommas(x) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 const Carousel = () => {
-  const [trending, setTrending] = useState([]);
-
-  const { currency, symbol } = useCryptoContext();
-
-  const fetchTrending = async () => {
-    const response = await fetch(TrendingCoins(currency));
-    const data = await response.json();
-    setTrending(data);
-  };
-
-  useEffect(() => {
-    fetchTrending();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency]);
+  const { trending } = useTrendingContext();
+  const { symbol } = useCryptoContext();
 
   const responsive = {
     0: {
@@ -39,7 +27,7 @@ const Carousel = () => {
     trending.map((trend) => {
       const profit = trend.price_change_percentage_24h >= 0;
 
-      if (!trending)
+      if (!trending.length)
         return (
           <CircularProgress
             style={{ color: "#66fcf1" }}
@@ -50,6 +38,7 @@ const Carousel = () => {
 
       return (
         <Link
+          key={trend.id}
           to={`/coins/${trend.id}`}
           style={{
             display: "flex",

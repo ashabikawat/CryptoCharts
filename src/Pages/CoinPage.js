@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import useCryptoContext from "../contexts/CryptoContext";
 import { SingleCoin } from "../api/api";
@@ -9,23 +9,25 @@ import { numberWithCommas } from "../components/Carousel";
 
 const CoinPage = () => {
   const { id } = useParams();
-  const [coin, setCoin] = useState();
   const { currency, symbol } = useCryptoContext();
+  const [coin, setCoin] = useState();
 
-  const fetchCoins = async () => {
+  const fetchCoin = useCallback(async () => {
     const response = await fetch(SingleCoin(id));
     const data = await response.json();
     setCoin(data);
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchCoin();
+  }, [fetchCoin]);
 
   const theme = useTheme();
 
-  useEffect(() => {
-    fetchCoins();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const memoizedCoin = useMemo(() => coin, [coin]);
 
-  if (!coin) return <LinearProgress style={{ backgroundColor: "#66fcf1" }} />;
+  if (!memoizedCoin)
+    return <LinearProgress style={{ backgroundColor: "#66fcf1" }} />;
 
   return (
     <Box
@@ -51,8 +53,8 @@ const CoinPage = () => {
         }}
       >
         <img
-          src={coin?.image?.large}
-          alt={coin?.name}
+          src={memoizedCoin?.image?.large}
+          alt={memoizedCoin?.name}
           height="200"
           style={{ marginBottom: 20 }}
         />
@@ -65,7 +67,7 @@ const CoinPage = () => {
             fontFamily: "Montserrat",
           }}
         >
-          {coin?.name}
+          {memoizedCoin?.name}
         </Typography>
 
         <Typography
@@ -79,8 +81,8 @@ const CoinPage = () => {
             textAlign: "justify",
           }}
         >
-          {coin?.description
-            ? parse(coin.description.en.split(". ")[0])
+          {memoizedCoin?.description
+            ? parse(memoizedCoin.description.en.split(". ")[0])
             : "Description not available"}
         </Typography>
 
@@ -123,7 +125,7 @@ const CoinPage = () => {
                 fontFamily: "Montserrat",
               }}
             >
-              {coin?.market_cap_rank}
+              {memoizedCoin?.market_cap_rank}
             </Typography>
           </span>
 
@@ -146,9 +148,11 @@ const CoinPage = () => {
               }}
             >
               {symbol}
-              {coin?.market_data
+              {memoizedCoin?.market_data
                 ? numberWithCommas(
-                    coin.market_data.current_price[currency.toLowerCase()]
+                    memoizedCoin.market_data.current_price[
+                      currency.toLowerCase()
+                    ]
                   )
                 : "N/A"}
             </Typography>
@@ -173,10 +177,12 @@ const CoinPage = () => {
               }}
             >
               {symbol}
-              {coin?.market_data
+              {memoizedCoin?.market_data
                 ? numberWithCommas(
                     String(
-                      coin.market_data.market_cap[currency.toLowerCase()]
+                      memoizedCoin.market_data.market_cap[
+                        currency.toLowerCase()
+                      ]
                     ).slice(0, -6)
                   )
                 : "N/A"}
@@ -185,7 +191,7 @@ const CoinPage = () => {
           </span>
         </Box>
       </Box>
-      <CoinInfo coin={coin} />
+      <CoinInfo coin={memoizedCoin} />
     </Box>
   );
 };

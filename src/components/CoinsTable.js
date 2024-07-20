@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { CoinList } from "../api/api";
 import useCryptoContext from "../contexts/CryptoContext";
 import {
@@ -20,9 +20,30 @@ import {
 import { useNavigate } from "react-router-dom";
 import { numberWithCommas } from "./Carousel";
 
+// Retry function
+const fetchWithRetry = async (url, retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return await response.json();
+      } else if (response.status === 429) {
+        // Too Many Requests - Retry after delay
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+    } catch (error) {
+      if (i === retries - 1) {
+        throw error;
+      }
+    }
+  }
+};
+
 const CoinsTable = () => {
   const [coins, setCoins] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [page, setPage] = useState(1);
 
@@ -35,35 +56,33 @@ const CoinsTable = () => {
 
   const { currency, symbol } = useCryptoContext();
 
-  const fetchCoins = async () => {
+  const fetchCoins = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(CoinList(currency));
-      const data = await response.json();
+      const data = await fetchWithRetry(CoinList(currency));
       console.log("Fetched Coins:", data);
       setCoins(data);
     } catch (error) {
-      console.error("Error fetching coins:", error);
+      console.error("Failed to fetch coins:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currency]);
 
   useEffect(() => {
     fetchCoins();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency]);
+  }, [fetchCoins]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!Array.isArray(coins)) return [];
     return coins.filter(
       (coin) =>
         coin.name.toLowerCase().includes(text.toLowerCase()) ||
         coin.symbol.toLowerCase().includes(text.toLowerCase())
     );
-  };
+  }, [coins, text]);
 
-  const searchResults = handleSearch();
+  const searchResults = useMemo(() => handleSearch(), [handleSearch]);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -88,26 +107,20 @@ const CoinsTable = () => {
 
         <TableContainer>
           {loading ? (
-            <LinearProgress sx={{ backgroundColor: "#66fcf1" }} />
+            <LinearProgress style={{ backgroundColor: "#66fcf1" }} />
           ) : (
             <Table>
               <TableHead sx={{ backgroundColor: "#66fcf1" }}>
-                <TableRow
-                  sx={{
-                    backgroundColor: "#66fcf1",
-                    cursor: "pointer",
-                    fontFamily: "Montserrat",
-                  }}
-                >
+                <TableRow>
                   {["Coin", "Price", "24h Change", "Market Cap"].map((head) => (
                     <TableCell
+                      key={head}
+                      align={head === "Coin" ? "left" : "right"}
                       sx={{
                         color: "black",
-                        fontWeight: 700,
+                        fontWeight: "700",
                         fontFamily: "Montserrat",
                       }}
-                      key={head}
-                      align={head === "Coin" ? "" : "right"}
                     >
                       {head}
                     </TableCell>
@@ -118,58 +131,67 @@ const CoinsTable = () => {
                 {searchResults
                   .slice((page - 1) * 10, (page - 1) * 10 + 10)
                   .map((row) => {
-                    const profit = row.price_change_percentage_24h >= 0;
-                    const marketCapStr = row?.market_cap
-                      ? row.market_cap.toString()
-                      : "";
-                    const formattedMarketCap =
-                      marketCapStr.length > 6
-                        ? numberWithCommas(marketCapStr.slice(0, -6)) + "M"
-                        : numberWithCommas(marketCapStr);
-
+                    const profit = row?.price_change_percentage_24h > 0;
                     return (
                       <TableRow
+                        key={row?.name}
+                        sx={{
+                          backgroundColor: "#16171a",
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "#131111",
+                          },
+                          fontFamily: "Montserrat",
+                        }}
                         onClick={() => navigate(`/coins/${row.id}`)}
-                        key={row.id}
-                        style={{ cursor: "pointer" }}
                       >
                         <TableCell
                           component="th"
                           scope="row"
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                          sx={{ display: "flex", gap: 15 }}
                         >
                           <img
                             src={row?.image}
-                            alt={row?.name}
+                            alt={row.name}
                             height="50"
-                            sx={{ marginRight: 2 }}
+                            style={{ marginBottom: 10 }}
                           />
                           <Box
                             sx={{ display: "flex", flexDirection: "column" }}
                           >
-                            <Typography
-                              sx={{ textTransform: "uppercase", fontSize: 22 }}
+                            <span
+                              style={{
+                                textTransform: "uppercase",
+                                fontSize: 22,
+                              }}
                             >
-                              {row?.symbol}
-                            </Typography>
-                            <Typography sx={{ color: "darkgrey" }}>
-                              {row?.name}
-                            </Typography>
+                              {row.symbol}
+                            </span>
+                            <span style={{ color: "darkgrey" }}>
+                              {row.name}
+                            </span>
                           </Box>
                         </TableCell>
                         <TableCell align="right">
                           {symbol}{" "}
-                          {numberWithCommas(row?.current_price.toFixed(2))}
+                          {numberWithCommas(row.current_price.toFixed(2))}
                         </TableCell>
                         <TableCell
                           align="right"
-                          sx={{ color: profit ? "green" : "red" }}
+                          sx={{
+                            color: profit > 0 ? "rgb(14, 203, 129)" : "red",
+                            fontWeight: 500,
+                          }}
                         >
-                          {profit && "+"}{" "}
-                          {row?.price_change_percentage_24h.toFixed(2)}%
+                          {profit && "+"}
+                          {row.price_change_percentage_24h.toFixed(2)}%
                         </TableCell>
                         <TableCell align="right">
-                          {symbol} {formattedMarketCap}
+                          {symbol}{" "}
+                          {numberWithCommas(
+                            row.market_cap.toString().slice(0, -6)
+                          )}
+                          M
                         </TableCell>
                       </TableRow>
                     );
@@ -178,19 +200,20 @@ const CoinsTable = () => {
             </Table>
           )}
         </TableContainer>
-
         <Pagination
-          count={Math.ceil(handleSearch().length / 10)}
-          page={page}
-          onChange={(_, value) => setPage(value)}
           sx={{
+            padding: 3,
+            width: "100%",
             display: "flex",
             justifyContent: "center",
-            padding: 2,
-            backgroundColor: "#131111",
             "& .MuiPaginationItem-root": {
               color: "#66fcf1",
             },
+          }}
+          count={Math.ceil(searchResults.length / 10)}
+          onChange={(_, value) => {
+            setPage(value);
+            window.scroll(0, 450);
           }}
         />
       </Container>

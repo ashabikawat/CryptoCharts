@@ -79,7 +79,9 @@ const CoinPage = () => {
             textAlign: "justify",
           }}
         >
-          {parse(coin?.description.en.split(". ")[0])}
+          {coin?.description
+            ? parse(coin.description.en.split(". ")[0])
+            : "Description not available"}
         </Typography>
 
         <Box
@@ -144,9 +146,11 @@ const CoinPage = () => {
               }}
             >
               {symbol}
-              {numberWithCommas(
-                coin?.market_data.current_price[currency.toLowerCase()]
-              )}
+              {coin?.market_data
+                ? numberWithCommas(
+                    coin.market_data.current_price[currency.toLowerCase()]
+                  )
+                : "N/A"}
             </Typography>
           </span>
 

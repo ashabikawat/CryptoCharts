@@ -131,6 +131,7 @@ const CoinsTable = () => {
                       <TableRow
                         onClick={() => navigate(`/coins/${row.id}`)}
                         key={row.id}
+                        style={{ cursor: "pointer" }}
                       >
                         <TableCell
                           component="th"

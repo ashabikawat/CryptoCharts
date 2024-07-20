@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import useCryptoContext from "../contexts/CryptoContext";
 import { TrendingCoins } from "../api/api";
@@ -38,6 +38,15 @@ const Carousel = () => {
     Array.isArray(trending) &&
     trending.map((trend) => {
       const profit = trend.price_change_percentage_24h >= 0;
+
+      if (!trending)
+        return (
+          <CircularProgress
+            style={{ color: "#66fcf1" }}
+            size={100}
+            thickness={1}
+          />
+        );
 
       return (
         <Link

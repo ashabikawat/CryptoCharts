@@ -173,11 +173,13 @@ const CoinPage = () => {
               }}
             >
               {symbol}
-              {numberWithCommas(
-                coin?.market_data.market_cap[currency.toLowerCase()]
-                  .toString()
-                  .slice(0, -6)
-              )}
+              {coin?.market_data
+                ? numberWithCommas(
+                    String(
+                      coin.market_data.market_cap[currency.toLowerCase()]
+                    ).slice(0, -6)
+                  )
+                : "N/A"}
               M
             </Typography>
           </span>
